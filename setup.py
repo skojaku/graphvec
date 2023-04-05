@@ -42,7 +42,7 @@ setup(
     install_requires=[
         'networkx',
         'tqdm',
-        'numpy',
+        'numpy==1.23.5',
         'pandas',
         'scikit-learn',
         'scipy',

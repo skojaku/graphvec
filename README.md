@@ -5,7 +5,7 @@ My toolkit for graph embedding.
 
 ## Install
 ```
-pip install https://github.com/skojaku/graphvec
+pip install git+https://github.com/skojaku/graphvec.git
 ```
 
 ## A minimal example 
