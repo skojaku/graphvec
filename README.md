@@ -22,9 +22,10 @@ emb = model.transform() # emb is a (number of nodes, dim) numpy array, with each
 
 - `Node2Vec`
 - `DeepWalk`
+- `AdjacencyMatrixSpectralEmbedding`
 - `LaplacianEigenMap`
-- `ModularitySpectralEmbedding`
-- `NonbacktrackingSpectralEmbedding`
+- `ModularityMatrixSpectralEmbedding`
+- `NonBacktrackingSpectralEmbedding`
 - `FastRP`
 
 See the codes for the parameters

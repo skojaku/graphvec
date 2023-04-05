@@ -11,16 +11,9 @@ import numpy as np
 from scipy import sparse
 from sklearn.decomposition import TruncatedSVD
 
-from embcom import rsvd, samplers, utils
+from embcom import samplers, utils
 
-try:
-    import glove
-except ImportError:
-    print(
-        "Ignore this message if you do not use Glove. Otherwise, install glove python package by 'pip install glove_python_binary' "
-    )
-
-
+#
 # Base class
 #
 class NodeEmbeddings:
@@ -137,7 +130,7 @@ class DeepWalk(Node2Vec):
     def __init__(self, **params):
         Node2Vec.__init__(self, **params)
         self.w2vparams = {
-            "sg": 0,
+            "sg": 1,
             "hs": 1,
             "min_count": 0,
             "workers": 4,
@@ -174,13 +167,6 @@ class LaplacianEigenMap(NodeEmbeddings):
 
     def update_embedding(self, dim):
         if self.reconstruction_vector:
-            #            u, s, v = rsvd.rSVD(
-            #                self.L, dim, p=self.p, q=self.q
-            #            )  # add one for the trivial solution
-            #            sign = np.sign(np.diag(v @ u))
-            #            s = s * sign
-            #            order = np.argsort(s)[::-1]
-            #            u = u[:, order] @ np.diag(np.sqrt(np.maximum(0, s[order])))
             s, u = sparse.linalg.eigs(self.L, k=dim, which="LR")
             s, u = np.real(s), np.real(u)
             order = np.argsort(s)[::-1]
@@ -191,19 +177,12 @@ class LaplacianEigenMap(NodeEmbeddings):
             s, u = np.real(s), np.real(u)
             order = np.argsort(-s)[1:]
             s, u = s[order], u[:, order]
-            #            u, s, v = rsvd.rSVD(
-            #                self.L, dim + 1, p=self.p, q=self.q
-            #            )  # add one for the trivial solution
-            #            sign = np.sign(np.diag(v @ u))
-            #            s = s * sign
-            #            order = np.argsort(s)[::-1][1:]
-            #            u = u[:, order]
             Dsqrt = sparse.diags(1 / np.maximum(np.sqrt(self.deg), 1e-12), format="csr")
             self.in_vec = Dsqrt @ u @ sparse.diags(np.sqrt(np.abs(s)))
             self.out_vec = u
 
 
-class AdjacencySpectralEmbedding(NodeEmbeddings):
+class AdjacencyMatrixSpectralEmbedding(NodeEmbeddings):
     def __init__(
         self,
         verbose=False,
@@ -220,11 +199,10 @@ class AdjacencySpectralEmbedding(NodeEmbeddings):
         svd = TruncatedSVD(n_components=dim, n_iter=7, random_state=42)
         u = svd.fit_transform(self.A)
         s = svd.singular_values_
-        # u, s, v = rsvd.rSVD(self.A, dim=dim)
         self.in_vec = u @ sparse.diags(s)
 
 
-class ModularitySpectralEmbedding(NodeEmbeddings):
+class ModularityMatrixSpectralEmbedding(NodeEmbeddings):
     def __init__(self, verbose=False, reconstruction_vector=False, p=100, q=40):
         self.in_vec = None  # In-vector
         self.out_vec = None  # Out-vector
@@ -253,81 +231,6 @@ class ModularitySpectralEmbedding(NodeEmbeddings):
         else:
             self.in_vec = u @ sparse.diags(np.sqrt(np.abs(s)))
         self.out_vec = u
-
-
-class HighOrderModularitySpectralEmbedding(NodeEmbeddings):
-    def __init__(
-        self,
-        verbose=False,
-        window_length=10,
-    ):
-        self.in_vec = None  # In-vector
-        self.out_vec = None  # Out-vector
-        self.window_length = window_length
-
-    def fit(self, net):
-        A = utils.to_adjacency_matrix(net)
-        self.A = A
-        self.deg = np.array(A.sum(axis=1)).reshape(-1)
-        return self
-
-    def update_embedding(self, dim):
-        stationary_prob = self.deg / np.sum(self.deg)
-
-        P = utils.to_trans_mat(self.A)
-        Q = []
-        for t in range(self.window_length):
-            Q.append(
-                [sparse.diags(stationary_prob / self.window_length) @ P]
-                + [P for _ in range(t)]
-            )
-        Q.append([-stationary_prob.reshape((-1, 1)), stationary_prob.reshape((1, -1))])
-        u, s, v = rsvd.rSVD(Q, dim=dim)
-        self.in_vec = u @ sparse.diags(s)
-        self.out_vec = None
-
-
-class LinearizedNode2Vec(NodeEmbeddings):
-    def __init__(self, verbose=False, window_length=10, p=100, q=40):
-        self.in_vec = None  # In-vector
-        self.out_vec = None  # Out-vector
-        self.window_length = window_length
-        self.p = p
-        self.q = q
-
-    def fit(self, net):
-        A = utils.to_adjacency_matrix(net)
-        self.A = A
-        self.deg = np.array(A.sum(axis=1)).reshape(-1)
-        return self
-
-    def update_embedding(self, dim):
-
-        # Calculate the normalized transition matrix
-        Dinvsqrt = sparse.diags(1 / np.sqrt(np.maximum(1, self.deg)))
-        Psym = Dinvsqrt @ self.A @ Dinvsqrt
-
-        # svd = TruncatedSVD(n_components=dim + 1, n_iter=7, random_state=42)
-        # u = svd.fit_transform(Psym)
-        # s = svd.singular_values_
-        s, u = sparse.linalg.eigs(Psym, k=dim + 1, which="LR")
-        s, u = np.real(s), np.real(u)
-        order = np.argsort(-s)
-        s, u = s[order], u[:, order]
-
-        # u, s, v = rsvd.rSVD(Psym, dim=dim + 1, p=self.p, q=self.q)
-        # sign = np.sign(np.diag(v @ u))
-
-        s = np.abs(s)
-        mask = s < np.max(s)
-        u = u[:, mask]
-        s = s[mask]
-
-        if self.window_length > 1:
-            s = (s * (1 - s**self.window_length)) / (self.window_length * (1 - s))
-
-        self.in_vec = u @ sparse.diags(np.sqrt(np.abs(s)))
-        self.out_vec = None
 
 
 class NonBacktrackingSpectralEmbedding(NodeEmbeddings):
@@ -382,88 +285,3 @@ class NonBacktrackingSpectralEmbedding(NodeEmbeddings):
             v = v @ np.diag(1 / c)
 
         self.in_vec = v
-
-
-class Node2VecMatrixFactorization(NodeEmbeddings):
-    def __init__(self, verbose=False, window_length=10, num_blocks=500):
-        self.in_vec = None  # In-vector
-        self.out_vec = None  # Out-vector
-        self.window_length = window_length
-        self.num_blocks = num_blocks
-
-    def fit(self, net):
-        A = utils.to_adjacency_matrix(net)
-
-        self.A = A
-        self.deg = np.array(A.sum(axis=1)).reshape(-1)
-        return self
-
-    def update_embedding(self, dim):
-
-        P = utils.to_trans_mat(self.A)
-        Ppow = utils.matrix_sum_power(P, self.window_length) / self.window_length
-        stationary_prob = self.deg / np.sum(self.deg)
-        R = np.log(Ppow @ np.diag(1 / stationary_prob))
-
-        # u, s, v = rsvd.rSVD(R, dim=dim)
-        svd = TruncatedSVD(n_components=dim + 1, n_iter=7, random_state=42)
-        u = svd.fit_transform(R)
-        s = svd.singular_values_
-        self.in_vec = u @ sparse.diags(np.sqrt(s))
-        self.out_vec = None
-
-
-class NonBacktrackingNode2Vec(Node2Vec):
-    """A python class for the node2vec.
-
-    Parameters
-    ----------
-    num_walks : int (optional, default 10)
-        Number of walks per node
-    walk_length : int (optional, default 40)
-        Length of walks
-    window_length : int (optional, default 10)
-        Restart probability of a random walker.
-    p : node2vec parameter (TODO: Write doc)
-    q : node2vec parameter (TODO: Write doc)
-    """
-
-    def __init__(self, num_walks=10, walk_length=80, window_length=10, **params):
-        Node2Vec.__init__(
-            self,
-            num_walks=num_walks,
-            walk_length=walk_length,
-            window_length=window_length,
-            **params
-        )
-        self.sampler = samplers.NonBacktrackingWalkSampler(
-            num_walks=num_walks, walk_length=walk_length
-        )
-
-
-class NonBacktrackingDeepWalk(DeepWalk):
-    """A python class for the node2vec.
-
-    Parameters
-    ----------
-    num_walks : int (optional, default 10)
-        Number of walks per node
-    walk_length : int (optional, default 40)
-        Length of walks
-    window_length : int (optional, default 10)
-        Restart probability of a random walker.
-    p : node2vec parameter (TODO: Write doc)
-    q : node2vec parameter (TODO: Write doc)
-    """
-
-    def __init__(self, num_walks=10, walk_length=80, window_length=10, **params):
-        DeepWalk.__init__(
-            self,
-            num_walks=num_walks,
-            walk_length=walk_length,
-            window_length=window_length,
-            **params
-        )
-        self.sampler = samplers.NonBacktrackingWalkSampler(
-            num_walks=num_walks, walk_length=walk_length
-        )
