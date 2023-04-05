@@ -1,8 +1,0 @@
-numpy
-pandas
-scikit-learn
-scipy
-numba
-tqdm
-faiss-cpu
-gensim
