@@ -2,7 +2,7 @@
 # @Author: Sadamori Kojaku
 # @Date:   2023-04-05 14:48:22
 # @Last Modified by:   Sadamori Kojaku
-# @Last Modified time: 2023-04-05 15:01:57
+# @Last Modified time: 2023-04-05 15:16:05
 import networkx as nx
 import numpy as np
 from scipy import sparse
@@ -22,8 +22,8 @@ def inheritors(klass):
     return subclasses
 
 
-class EmbeddingMethods(unittest.TestCase):
-    def __init__(self):
+class TestingEmbeddingMethods(unittest.TestCase):
+    def setUp(self):
         G = nx.karate_club_graph()
         self.A = nx.adjacency_matrix(G)
         self.labels = np.unique(
@@ -38,5 +38,5 @@ class EmbeddingMethods(unittest.TestCase):
             instance.transform(dim=8)
 
 
-if __name__ == "__main__":
-    unittest.main()
+# if __name__ == "__main__":
+#    unittest.main()
