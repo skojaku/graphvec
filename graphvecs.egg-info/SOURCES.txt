@@ -1,0 +1,15 @@
+LICENSE
+README.md
+setup.py
+graphvec/PairSampler.py
+graphvec/__init__.py
+graphvec/embeddings.py
+graphvec/metrics.py
+graphvec/samplers.py
+graphvec/utils.py
+graphvecs.egg-info/PKG-INFO
+graphvecs.egg-info/SOURCES.txt
+graphvecs.egg-info/dependency_links.txt
+graphvecs.egg-info/not-zip-safe
+graphvecs.egg-info/requires.txt
+graphvecs.egg-info/top_level.txt

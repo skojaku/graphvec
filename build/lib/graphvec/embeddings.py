@@ -2,7 +2,7 @@
 # @Author: Sadamori Kojaku
 # @Date:   2022-08-26 09:51:23
 # @Last Modified by:   Sadamori Kojaku
-# @Last Modified time: 2023-04-05 15:01:27
+# @Last Modified time: 2023-02-19 15:33:48
 """Module for embedding."""
 # %%
 import gensim
@@ -11,7 +11,7 @@ import numpy as np
 from scipy import sparse
 from sklearn.decomposition import TruncatedSVD
 
-from graphvec import samplers, utils
+from embcom import samplers, utils
 
 #
 # Base class
@@ -218,7 +218,6 @@ class ModularityMatrixSpectralEmbedding(NodeEmbeddings):
 
     def update_embedding(self, dim):
 
-        self.A = self.A.asfptype()
         s, u = sparse.linalg.eigs(self.A, k=dim + 1, which="LR")
         s, u = np.real(s), np.real(u)
         s = s[1:]
