@@ -2,7 +2,7 @@
 # @Author: Sadamori Kojaku
 # @Date:   2022-08-26 09:51:23
 # @Last Modified by:   Sadamori Kojaku
-# @Last Modified time: 2023-04-05 15:01:27
+# @Last Modified time: 2023-04-05 18:02:26
 """Module for embedding."""
 # %%
 import gensim
@@ -286,3 +286,108 @@ class NonBacktrackingSpectralEmbedding(NodeEmbeddings):
             v = v @ np.diag(1 / c)
 
         self.in_vec = v
+
+
+class FastRP(NodeEmbeddings):
+    def __init__(self, window_size=10, s=3.0, beta=-1):
+        """Fast Random Projection embedding
+
+        See https://arxiv.org/abs/1908.11512.
+
+        Examples:
+
+        Getting an embedding of a network
+        >> emb = fastRP(net, dim=256, window_size=10)
+
+        If the network is directed, one can construct two types of an embedding, one based on the neighbors
+        connected by in-coming edges, and those by out-going edges. You can get the two embeddings by setting `edge_direction=True`.
+
+        >> emb_out, emb_in = fastRP(net, dim=256, window_size=10, edge_direction=True)
+
+        where `emb_out` is an embedding of nodes based on the edges going from the nodes, and `emb_in` is based on the in-coming edges.
+
+        :param net: Adjacency matrix
+        :type net: scipy.sparse matrix
+        :param dim: Embedding dimension
+        :type dim: int
+        :param window_size: Window size
+        :type window_size: int
+        :param beta: degree normalization, defaults to -1. Ranges [0,1]. beta = -1 is the strongest normalization. beta = 0 means no regularization.
+        :type beta: int, optional
+        :param s: Inverse density of the random matrix, defaults to 3.0
+        :type s: float, optional
+        :return: embedding matrix
+        :rtype: numpy.ndarray of (number of nodes, dimension)
+        """
+        self.window_size = window_size
+        self.s = s
+        self.beta = beta
+        self.out_vec = None
+        self.in_vec = None
+
+    def fit(self, net):
+        A = utils.to_adjacency_matrix(net)
+        self.A = A
+        return self
+
+    def update_embedding(self, dim):
+
+        self.in_vec, self.out_vec = self.fastRP(
+            self.A,
+            dim,
+            window_size=self.window_size,
+            beta=self.beta,
+            s=self.s,
+            edge_direction=True,
+        )
+
+    def fastRP(self, net, dim, window_size, beta=-1, s=3.0, edge_direction=False):
+
+        n_nodes = net.shape[0]
+        # Generate random matrix for random projection
+        X = sparse.random(
+            n_nodes,
+            dim,
+            density=1 / s,
+            data_rvs=lambda x: np.sqrt(s) * (2 * np.random.randint(2, size=x) - 1),
+        ).toarray()
+
+        emb = self._fastRP(net, dim, window_size, beta=beta, X=X.copy())
+
+        if edge_direction:
+            emb_cnt = self._fastRP(
+                net=sparse.csr_matrix(net.T),
+                dim=dim,
+                window_size=window_size,
+                beta=beta,
+                X=X.copy(),
+            )
+            return emb, emb_cnt
+        return emb
+
+    def _fastRP(self, net, dim, window_size, X, beta=-1):
+
+        # Get stats
+        n_nodes = net.shape[0]
+        outdeg = np.array(net.sum(axis=1)).reshape(-1)
+        indeg = np.array(net.sum(axis=0)).reshape(-1)
+
+        # Construct the transition matrix
+        P = sparse.diags(1 / np.maximum(1, outdeg)) @ net  # Transition matrix
+        L = sparse.diags(np.power(np.maximum(indeg.astype(float), 1.0), beta))
+
+        # First random projection
+        X0 = (P @ L) @ X.copy()  # to include the self-loops
+
+        # h is an array for normalization
+        h = np.ones((n_nodes, 1))
+        h0 = h.copy()
+
+        # Iterative projection
+        for _ in range(window_size):
+            X = P @ X + X0
+            h = P @ h + h0
+
+        # Normalization
+        X = sparse.diags(1.0 / np.maximum(np.array(h).reshape(-1), 1e-8)) @ X
+        return X

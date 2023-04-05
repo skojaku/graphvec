@@ -36,3 +36,4 @@ class TestingEmbeddingMethods(unittest.TestCase):
             instance = model()
             instance.fit(self.A)
             instance.transform(dim=8)
+            print(model)
