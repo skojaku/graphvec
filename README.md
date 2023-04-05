@@ -29,3 +29,15 @@ emb = model.transform() # emb is a (number of nodes, dim) numpy array, with each
 - `FastRP`
 
 See the codes for the parameters
+
+
+## Development
+
+### Install 
+```bash 
+conda create -n graphvec python=3.9
+conda activate graphvec
+conda install -c conda-forge mamba -y
+mamba install -c conda-forge graph-tool scikit-learn numpy numba scipy pandas networkx seaborn matplotlib gensim ipykernel tqdm black -y
+mamba install -c conda-forge numpy==1.23.5
+```
