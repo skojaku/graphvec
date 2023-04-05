@@ -20,6 +20,3 @@ jobs:
       - name: Unit Test
         run: |
           python -m unittest tests/test.py
-      - name: Build python package
-        run: |
-            python setup.py bdist_wheel

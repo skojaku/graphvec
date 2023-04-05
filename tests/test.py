@@ -2,7 +2,7 @@
 # @Author: Sadamori Kojaku
 # @Date:   2023-04-05 14:48:22
 # @Last Modified by:   Sadamori Kojaku
-# @Last Modified time: 2023-04-05 15:16:05
+# @Last Modified time: 2023-04-05 15:17:28
 import networkx as nx
 import numpy as np
 from scipy import sparse
@@ -36,7 +36,3 @@ class TestingEmbeddingMethods(unittest.TestCase):
             instance = model()
             instance.fit(self.A)
             instance.transform(dim=8)
-
-
-# if __name__ == "__main__":
-#    unittest.main()
