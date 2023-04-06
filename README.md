@@ -6,7 +6,6 @@ All algorithms are implemented in Python, with speed accelerations by numba.
 
 # Contents
 - [Installation](#installation)
-- [Usage](#usage)
 - [Examples](#examples)
 - [Available Algorithms](#available-algorithms)
 
@@ -32,7 +31,7 @@ See requirements.txt
 
 Following the scikit-learn's API design, all algorithms have two methods`.fit` and `.transform`. The `.fit` method takes a network to learn the network structure, and the `.transform` produces the emebdding of nodes. More specifically, follow the steps below. 
 
-First, load a graph embedding method. For demonstration, we use `Node2Vec`. See #available-algorithms for other graph embedding methods.
+First, load a graph embedding method. For demonstration, we use `Node2Vec`. See the "Available algorithms" Section for other graph embedding methods.
 
 ```python
 import graphvec
