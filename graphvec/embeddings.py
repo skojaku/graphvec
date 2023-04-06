@@ -2,7 +2,7 @@
 # @Author: Sadamori Kojaku
 # @Date:   2022-08-26 09:51:23
 # @Last Modified by:   Sadamori Kojaku
-# @Last Modified time: 2023-04-05 18:02:26
+# @Last Modified time: 2023-04-05 21:56:03
 """Module for embedding."""
 # %%
 import gensim
@@ -391,3 +391,8 @@ class FastRP(NodeEmbeddings):
         # Normalization
         X = sparse.diags(1.0 / np.maximum(np.array(h).reshape(-1), 1e-8)) @ X
         return X
+
+
+class LINE(Node2Vec):
+    def __init__(self, **params):
+        Node2Vec.__init__(self, window_length=1, **params)

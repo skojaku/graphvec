@@ -1,4 +1,4 @@
-# A Python package for graph embedding methods 
+# A Python package for graph embedding methods
 [![Unit Test & Deploy](https://github.com/skojaku/graphvec/actions/workflows/main.yml/badge.svg)](https://github.com/skojaku/graphvec/actions/workflows/main.yml)
 
 This package contains algorithms for graph embedding for networks.
@@ -25,11 +25,11 @@ conda develop .
 
 ### Dependency:
 
-See requirements.txt
+See `setup.py`
 
 # Usage
 
-Following the scikit-learn's API design, all algorithms have two methods`.fit` and `.transform`. The `.fit` method takes a network to learn the network structure, and the `.transform` produces the emebdding of nodes. More specifically, follow the steps below. 
+Following the scikit-learn's API design, all algorithms have two methods`.fit` and `.transform`. The `.fit` method takes a network to learn the network structure, and the `.transform` produces the emebdding of nodes. More specifically, follow the steps below.
 
 First, load a graph embedding method. For demonstration, we use `Node2Vec`. See the "Available algorithms" Section for other graph embedding methods.
 
@@ -46,9 +46,9 @@ where `A` is the adjacency matrix in scipy.sparse format. For networkx user, net
 
 Lastly, call `.transform` to generate an embedding:
 ```python
-emb = model.transform(dim=64) 
+emb = model.transform(dim=64)
 ```
-where `dim` is the number of dimensions. `emb` is a numpy.ndarray with size (number of nodes, dim). The ith row in `emb` (`emb[i, :]`) is the embedding vector of the ith node in the given adjacency matrix. 
+where `dim` is the number of dimensions. `emb` is a numpy.ndarray with size (number of nodes, dim). The ith row in `emb` (`emb[i, :]`) is the embedding vector of the ith node in the given adjacency matrix.
 
 
 
@@ -57,6 +57,7 @@ where `dim` is the number of dimensions. `emb` is a numpy.ndarray with size (num
 | Algorithm | Reference |
 |-----------|-----------|
 | [graphvec.Node2Vec](https://github.com/skojaku/graphvec/blob/617c3a9ab3b5a859c1957507144ae6853871b602/graphvec/embeddings.py#L47) | [Grover, Aditya, and Jure Leskovec. "node2vec: Scalable feature learning for networks." Proceedings of the 22nd ACM SIGKDD international conference on Knowledge discovery and data mining. 2016.](https://dl.acm.org/doi/abs/10.1145/2939672.2939754?casa_token=7cmZ7FTEFQUAAAAA:kzky_dEcYk2HJvCWR6Oj0WVlQ8kXYDPzne7DH9JrNwJaVMQwqLIsR72chSmYu3gFvavK5IHz5uA)|
+| [graphvec.LINE](https://github.com/skojaku/graphvec/blob/617c3a9ab3b5a859c1957507144ae6853871b602/graphvec/embeddings.py#L396) | [Tang, Jian, et al. "Line: Large-scale information network embedding." Proceedings of the 24th international conference on World Wide Web. 2015.](https://dl.acm.org/doi/abs/10.1145/2736277.2741093?casa_token=sPIWEafsbrYAAAAA:R5a3ZL9gDZob7yZf21ygq8aGcA4r4egpSjriujXYc-1dU1vEqLBkankGfOXpELPFSGb2IRPd-5o)|
 | [graphvec.DeepWalk](https://github.com/skojaku/graphvec/blob/617c3a9ab3b5a859c1957507144ae6853871b602/graphvec/embeddings.py#L129)  | [Perozzi, Bryan, Rami Al-Rfou, and Steven Skiena. "Deepwalk: Online learning of social representations." Proceedings of the 20th ACM SIGKDD international conference on Knowledge discovery and data mining. 2014.](https://dl.acm.org/doi/abs/10.1145/2623330.2623732?casa_token=M-iuSKzREZkAAAAA:PO_lT11Wqf7gpkbGmip_2yOPVaDoBEstKFmPWGTMQ0EQpGYCrbY5n06yFoCHoSc3MA1L876sEyE) |
 | [graphvec.LaplacianEigenMap](https://github.com/skojaku/graphvec/blob/617c3a9ab3b5a859c1957507144ae6853871b602/graphvec/embeddings.py#L140)  | [Belkin, Mikhail, and Partha Niyogi. "Laplacian eigenmaps and spectral techniques for embedding and clustering." Advances in neural information processing systems 14 (2001).](https://proceedings.neurips.cc/paper/2001/hash/f106b7f99d2cb30c3db1c3cc0fde9ccb-Abstract.html) |
 | [graphvec.ModularityMatrixSpectralEmbedding](https://github.com/skojaku/graphvec/blob/617c3a9ab3b5a859c1957507144ae6853871b602/graphvec/embeddings.py#L237)  | [Nadakuditi, Raj Rao, and Mark EJ Newman. "Graph spectra and the detectability of community structure in networks." Physical review letters 108.18 (2012): 188701.](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.108.188701)|
@@ -66,8 +67,8 @@ where `dim` is the number of dimensions. `emb` is a numpy.ndarray with size (num
 
 ## For development
 
-### Install 
-```bash 
+### Install
+```bash
 conda create -n graphvec python=3.9
 conda activate graphvec
 conda install -c conda-forge mamba -y
