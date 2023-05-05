@@ -12,7 +12,9 @@ from scipy import sparse
 from sklearn.decomposition import TruncatedSVD
 
 from scipy.sparse import csgraph
+from scipy.optimize import curve_fit
 from graphvec import samplers, utils
+
 
 #
 # Base class
@@ -434,7 +436,7 @@ class SpectralGraphTransformation(NodeEmbeddings):
     - https://dl.acm.org/doi/abs/10.1145/1553374.1553447
     """
 
-    def __init__(self, kernel_func="exp", kernel_matrix="A"):
+    def __init__(self, kernel_func="exp", kernel_matrix="normalized_A"):
         """
         Initialize SpectralGraphTransformation with given kernel function and
         kernel matrix options.
