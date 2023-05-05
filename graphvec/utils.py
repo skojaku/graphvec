@@ -268,26 +268,6 @@ def const_sparse_mat(r, c, v, N, uniqify=True, min_nonzero_value=0):
     return sparse.csr_matrix((v, (r, c)), shape=(N, N))
 
 
-def pairing(k1, k2, unordered=False):
-    """Cantor pairing function
-    http://en.wikipedia.org/wiki/Pairing_function#Cantor_pairing_function."""
-    k12 = k1 + k2
-    if unordered:
-        return (k12 * (k12 + 1)) * 0.5 + np.minimum(k1, k2)
-    else:
-        return (k12 * (k12 + 1)) * 0.5 + k2
-
-
-def depairing(z):
-    """Inverse of Cantor pairing function http://en.wikipedia.org/wiki/Pairing_
-    function#Inverting_the_Cantor_pairing_function."""
-    w = np.floor((np.sqrt(8 * z + 1) - 1) * 0.5)
-    t = (w ** 2 + w) * 0.5
-    y = np.round(z - t).astype(np.int64)
-    x = np.round(w - y).astype(np.int64)
-    return x, y
-
-
 #
 # Generate sentences from walk sequence as the input for gensim
 #
@@ -390,3 +370,28 @@ def matrix_sum_power(A, T):
         At = A @ At
         As += At
     return As
+
+
+
+
+def toUndirected(net):
+    net = net + net.T
+    net.data = net.data * 0 + 1
+    net.eliminate_zeros()
+    net = sparse.csr_matrix.asfptype(net)
+    return net
+
+
+def edge2network(src, trg, n_nodes=None, val=None):
+    if val is None:
+        val = np.ones_like(src)
+    if n_nodes is None:
+        n_nodes = np.max([np.max(src), np.max(trg)]) + 1
+    return toUndirected(sparse.csr_matrix((val, (src, trg)), shape=(n_nodes, n_nodes)))
+
+def pairing(r, c):
+    return np.minimum(r, c) + 1j * np.maximum(r, c)
+
+
+def depairing(v):
+    return np.real(v).astype(int), np.imag(v).astype(int)

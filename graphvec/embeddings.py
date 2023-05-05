@@ -11,6 +11,7 @@ import numpy as np
 from scipy import sparse
 from sklearn.decomposition import TruncatedSVD
 
+from scipy.sparse import csgraph
 from graphvec import samplers, utils
 
 #
@@ -396,3 +397,166 @@ class FastRP(NodeEmbeddings):
 class LINE(Node2Vec):
     def __init__(self, **params):
         Node2Vec.__init__(self, window_length=1, **params)
+
+class SpectralGraphTransformation(NodeEmbeddings):
+    """
+    Spectral graph transformation
+
+    Fits and transforms input graph using spectral graph transformation method.
+
+    Parameters
+    ----------
+    NodeEmbeddings : _type_
+        _description_
+
+    Attributes
+    ----------
+    kernel_matrix : str
+        String indicating kernel matrix to use (options: "A", "normalized_A", "laplacian")
+    kernel_func : callable
+        Function defining the kernel function used in the transformation
+    in_vec, out_vec : ndarray or None
+        Input and output node embeddings
+
+    Methods
+    -------
+    fit(net)
+        Fits the model on the input graph
+    update_embedding(dim)
+        Transforms the fitted graph into low-dimensional space
+    get_kernel_matrix(A)
+        Computes the kernel matrix from an adjacency matrix
+    train_test_edge_split(A, fraction)
+        Splits edge set into training and testing sets
+
+    References
+    ----------
+    - https://dl.acm.org/doi/abs/10.1145/1553374.1553447
+    """
+
+    def __init__(self, kernel_func="exp", kernel_matrix="A"):
+        """
+        Initialize SpectralGraphTransformation with given kernel function and
+        kernel matrix options.
+
+        Parameters
+        ----------
+        kernel_func : str or callable, optional (default="exp")
+            The kernel function used for the spectral graph transformation.
+            Can be a string representing one of two built-in kernel functions ("exp" or "neu"),
+            or a user-defined function taking two input values as follows:
+            `kernel_func(x, a) -> y`, where x is an array of eigenvalues, a is a scalar parameter,
+            and y is the transformed array of eigenvalues.
+        kernel_matrix : str, optional (default="A")
+            The kernel matrix used in the transformation. Can be one of three options:
+            "A" for adjacency matrix, "normalized_A" for normalized adjacency matrix,
+            or "laplacian" for Laplacian matrix.
+        """
+        self.kernel_matrix = kernel_matrix
+
+        if kernel_func == "exp":
+            self.kernel_func = lambda x, a: np.exp(-a * x)
+        elif kernel_func == "neu":
+            self.kernel_func = lambda x, a: 1.0 / (1 - a * x)
+        else:
+            self.kernel_func = kernel_func
+        self.in_vec = None
+        self.out_vec = None
+
+    def fit(self, net):
+        """
+        Fit the spectral graph transformation model on the input graph.
+
+        Parameters
+        ----------
+        net : array-like or sparse matrix
+            Input graph as an adjacency matrix or equivalent sparse matrix format.
+
+        Returns
+        -------
+        self : object
+            Returns self.
+        """
+
+        A = utils.to_adjacency_matrix(net)
+        n_nodes = A.shape[0]
+        train_edges, test_edges = self.train_test_edge_split(A, 1 / 3)
+        train_net = utils.edge2network(train_edges[0], train_edges[1], n_nodes=n_nodes)
+        test_net = utils.edge2network(test_edges[0], test_edges[1], n_nodes=n_nodes)
+
+        self.A = A
+        self.train_net = train_net
+        self.test_net = test_net
+        self.Gkernel = self.get_kernel_matrix(A)
+        self.Gkernel_train = self.get_kernel_matrix(train_net)
+
+        return self
+
+    def update_embedding(self, dim):
+        """
+        Update the input network embedding and transform it into low-dimensional space.
+
+        Parameters
+        ----------
+        dim : int
+            Dimensions of the output embedding.
+
+        Returns
+        -------
+        None
+        """
+
+        which = "LR"
+        if self.kernel_matrix == "laplacian":
+            which = "SR"
+
+        s_train, u = sparse.linalg.eigs(self.Gkernel_train, k=dim, which=which)
+        s_test = np.diag(u.T @ self.Gkernel @ u)
+        s_test, u, s_train = np.real(s_test), np.real(u), np.real(s_train)
+
+        popt, pcov = curve_fit(
+            self.kernel_func,
+            s_train / np.max(np.abs(s_train)),
+            s_test / np.max(np.abs(s_test)),
+            p0=[-5e-1],
+        )
+        alpha = popt[0]
+        spred = self.kernel_func(s_test, alpha)
+        self.in_vec = u @ np.diag(np.sqrt(np.abs(spred)))
+        self.out_vec = self.in_vec
+
+    def get_kernel_matrix(self, A):
+        deg = np.array(A.sum(axis=1)).reshape(-1)
+        if self.kernel_matrix == "A":
+            M = A
+        elif self.kernel_matrix == "normalized_A":
+            M = sparse.diags(1 / np.sqrt(deg)) @ A @ sparse.diags(1 / np.sqrt(deg))
+        elif self.kernel_matrix == "laplacian":
+            M = sparse.diags(deg) - A
+        return sparse.csr_matrix(M)
+
+    def train_test_edge_split(self, A, fraction):
+        r, c, _ = sparse.find(A)
+        edges = np.unique(utils.pairing(r, c))
+
+        MST = csgraph.minimum_spanning_tree(A + A.T)
+        r, c, _ = sparse.find(MST)
+        mst_edges = np.unique(utils.pairing(r, c))
+        remained_edge_set = np.array(
+            list(set(list(edges)).difference(set(list(mst_edges))))
+        )
+        max_fraction = len(remained_edge_set) / len(edges)
+        if fraction > max_fraction:
+            fraction = max_fraction * 0.5
+        n_edge_removal = int(fraction * len(remained_edge_set))
+        test_edge_set = np.random.choice(
+            remained_edge_set, n_edge_removal, replace=False
+        )
+
+        train_edge_set = np.array(
+            list(set(list(edges)).difference(set(list(test_edge_set))))
+        )
+
+        test_edges_ = utils.depairing(test_edge_set)
+        train_edges_ = utils.depairing(train_edge_set)
+        return train_edges_, test_edges_
