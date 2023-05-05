@@ -64,6 +64,7 @@ where `dim` is the number of dimensions. `emb` is a numpy.ndarray with size (num
 | [graphvec.AdjacencyMatrixSpectralEmbedding](https://github.com/skojaku/graphvec/blob/617c3a9ab3b5a859c1957507144ae6853871b602/graphvec/embeddings.py#L205)  | The spectrum of the adjacency matrix |
 | [graphvec.NonBacktrackingSpectralEmbedding](https://github.com/skojaku/graphvec/blob/617c3a9ab3b5a859c1957507144ae6853871b602/graphvec/embeddings.py#L237)  | [Krzakala, Florent, et al. "Spectral redemption in clustering sparse networks." Proceedings of the National Academy of Sciences 110.52 (2013): 20935-20940.](https://www.pnas.org/doi/abs/10.1073/pnas.1312486110) |
 | [graphvec.FastRP](https://github.com/skojaku/graphvec/blob/617c3a9ab3b5a859c1957507144ae6853871b602/graphvec/embeddings.py#L291) | [Chen, Haochen, et al. "Fast and accurate network embeddings via very sparse random projection." Proceedings of the 28th ACM international conference on information and knowledge management. 2019.](https://dl.acm.org/doi/abs/10.1145/3357384.3357879) |
+| [graphvec.SpectralGraphTransformation](https://github.com/skojaku/graphvec/blob/617c3a9ab3b5a859c1957507144ae6853871b602/graphvec/embeddings.py#L403) | [Kunegis, Jérôme, and Andreas Lommatzsch. "Learning spectral graph transformations for link prediction." Proceedings of the 26th Annual International Conference on Machine Learning. 2009.](https://dl.acm.org/doi/abs/10.1145/1553374.1553447) |
 
 ## For development
 
